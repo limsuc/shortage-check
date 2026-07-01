@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <title>거래처품절확인</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand-area">
+        <span class="brand-mark">M</span>
+        <div>
+          <strong>거래처품절확인</strong>
+          <small>MEDMATE 업무도구</small>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="intro-panel">
+        <div>
+          <p class="eyebrow">Stockout Checker</p>
+          <h1>거래처별 품절품목을 빠르게 확인!</h1>
+          <p>
+            거래처 마스터 파일을 다운받아, 거래처별 품목을 입력하고 업로드 하면 CSO제약사별 품절품목과 대조하여,
+            거래처별 처방품목중 품절품목이 있을 때 하단에 결과로 보여줍니다.
+            TEXT, IMAGE(PNG)로 어디든 붙여넣어 전달할 수 있게 제작하였습니다.
+          </p>
+        </div>
+        <div class="intro-summary" aria-label="예상 처리 흐름">
+          <span>마스터</span>
+          <b>+</b>
+          <span>품절공지(서원파마제공)</span>
+          <b>=</b>
+          <span>거래처별 품절품목</span>
+        </div>
+      </section>
+
+      <section class="workspace-grid">
+        <aside class="setup-panel" aria-label="확인 자료 준비">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Start</p>
+              <h2>확인 자료 준비</h2>
+            </div>
+            <span id="readyBadge" class="status-badge">대기중</span>
+          </div>
+
+          <div class="setup-step" id="clientStep">
+            <div class="step-label">
+              <span>01</span>
+              <strong>거래처 마스터</strong>
+            </div>
+            <p>거래처명, 병의원명, 제품명이 있는 CSV 마스터 파일을 올립니다.</p>
+            <label class="file-button">
+              <input id="clientFile" type="file" accept=".csv" />
+              <span>거래처 파일 선택</span>
+            </label>
+            <div class="inline-buttons">
+              <button id="sampleClientButton" class="link-button" type="button">예시 데이터로 둘러보기</button>
+              <button id="downloadTemplateButton" class="link-button" type="button">예시 양식 다운로드</button>
+            </div>
+          </div>
+
+          <div class="setup-step" id="noticeStep">
+            <div class="step-label">
+              <span>02</span>
+              <strong>품절 공지</strong>
+            </div>
+            <p>기본 품절 공지를 불러오거나 사용자가 가진 PDF를 직접 올립니다.</p>
+            <button id="loadDefaultButton" class="primary-button soft" type="button">품절목록 불러오기 (서원파마 제공)</button>
+            <label class="file-button">
+              <input id="noticeFile" type="file" accept=".pdf,.csv,.txt" />
+              <span>다른 품절목록 선택</span>
+            </label>
+          </div>
+
+          <div class="setup-step compact">
+            <div class="step-label">
+              <span>03</span>
+              <strong>직접 입력</strong>
+            </div>
+            <textarea id="manualNotice" rows="5" placeholder="대원제약 | 브로나제장용정 | 6월 8일&#10;유한양행 | 페북트정40mg | 6월 5일"></textarea>
+          </div>
+
+          <button id="checkButton" class="primary-button full" type="button" disabled>영향 거래처 확인</button>
+        </aside>
+
+        <section class="result-panel" aria-label="거래처 품절 확인 결과">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Result</p>
+              <h2>확인 결과</h2>
+            </div>
+            <div class="result-actions">
+              <button id="copyButton" class="ghost-button" type="button" disabled>요약 복사</button>
+              <button id="exportButton" class="ghost-button" type="button" disabled>품절목록 엑셀 다운로드</button>
+            </div>
+          </div>
+
+          <div class="metric-row">
+            <div>
+              <span>거래처</span>
+              <strong id="clientCount">0</strong>
+            </div>
+            <div>
+              <span>품절 품목</span>
+              <strong id="noticeCount">0</strong>
+            </div>
+            <div>
+              <span>영향 거래처</span>
+              <strong id="affectedCount">0</strong>
+            </div>
+          </div>
+
+          <div id="emptyState" class="empty-state">
+            <strong>아직 확인 결과가 없습니다.</strong>
+            <span>거래처 마스터와 품절 공지를 준비하면 영향을 받는 거래처 목록이 표시됩니다.</span>
+          </div>
+
+          <div id="resultContent" class="hidden">
+            <div class="filter-bar">
+              <button class="filter-chip active" type="button" data-filter="all">전체</button>
+              <button class="filter-chip" type="button" data-filter="multi">2건 이상</button>
+              <button class="filter-chip" type="button" data-filter="single">1건</button>
+              <button class="filter-chip" type="button" data-filter="unknown">출하예정 미정</button>
+            </div>
+
+            <div id="clientList" class="client-list"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./default-stockouts.js"></script>
+    <script src="./pdf-stockout-parser.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
