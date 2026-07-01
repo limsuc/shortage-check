@@ -22,6 +22,7 @@ const state = {
   stockouts: [],
   results: [],
   checked: false,
+  isChecking: false,
   filter: "all",
 };
 
@@ -253,7 +254,36 @@ function findMatches() {
   return matches;
 }
 
-function runMatch() {
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function animateMetricCounters(values) {
+  const targets = [
+    ["#clientCount", values.clients],
+    ["#noticeCount", values.notices],
+    ["#affectedCount", values.affected],
+  ];
+
+  targets.forEach(([selector, target]) => {
+    const element = $(selector);
+    const end = Number(target) || 0;
+    const startTime = performance.now();
+    const duration = 620;
+
+    function tick(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      element.textContent = Math.round(end * eased);
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  });
+}
+
+async function runMatch() {
+  if (state.isChecking) return;
   if (!state.clients.length) {
     alert("거래처 마스터 파일을 먼저 업로드해 주세요.");
     return;
@@ -262,6 +292,11 @@ function runMatch() {
     alert("품절목록을 불러오거나 파일을 선택해 주세요.");
     return;
   }
+
+  state.isChecking = true;
+  state.checked = false;
+  render();
+  await wait(650);
 
   const grouped = new Map();
   for (const match of findMatches()) {
@@ -285,8 +320,14 @@ function runMatch() {
 
   state.results = [...grouped.values()].sort((a, b) => a.clientName.localeCompare(b.clientName, "ko"));
   state.checked = true;
+  state.isChecking = false;
   state.filter = "all";
   render();
+  animateMetricCounters({
+    clients: uniqueCount(state.clients.map((item) => item.clientName)),
+    notices: state.stockouts.length,
+    affected: state.results.length,
+  });
 }
 
 function rowsFromCard(card) {
@@ -520,14 +561,14 @@ function filteredResults() {
   return state.results;
 }
 
-function renderResultCard(result) {
+function renderResultCard(result, resultIndex) {
   const badgeClass = result.items.length >= 2 ? "priority high" : "priority";
   const hospitals = [...new Set(result.items.map((item) => item.hospital))];
   const subtitle = hospitals.length > 1 ? `${hospitals[0]} 외 ${hospitals.length - 1}곳 · ${result.items.length}개 품목` : `${hospitals[0]} · ${result.items.length}개 품목`;
   const rows = result.items
     .map(
-      (item) => `
-        <tr>
+      (item, itemIndex) => `
+        <tr style="--row-delay: ${Math.min(resultIndex * 40 + itemIndex * 24, 320)}ms">
           <td>${escapeHtml(item.hospital)}</td>
           <td>${escapeHtml(item.registeredProduct)}</td>
           <td>${escapeHtml(item.maker)}</td>
@@ -538,7 +579,7 @@ function renderResultCard(result) {
     .join("");
 
   return `
-    <article class="client-card">
+    <article class="client-card" style="--result-delay: ${Math.min(resultIndex * 55, 360)}ms">
       <div class="client-head">
         <div>
           <h3>${escapeHtml(result.clientName)}</h3>
@@ -580,11 +621,13 @@ function render() {
   $("#affectedCount").textContent = state.checked ? state.results.length : "0";
   $("#readyBadge").textContent = hasClients && hasNotice ? "확인 가능" : "대기중";
   $("#readyBadge").classList.toggle("ready", hasClients && hasNotice);
-  $("#checkButton").disabled = !(hasClients && hasNotice);
+  $("#checkButton").disabled = !(hasClients && hasNotice) || state.isChecking;
+  $("#checkButton").innerHTML = state.isChecking ? `확인 중<span class="loading-dots" aria-hidden="true"></span>` : "품절 확인 실행";
   $("#copyButton").disabled = !state.checked || !state.results.length;
   $("#exportButton").disabled = !state.checked || !state.results.length;
-  $("#emptyState").classList.toggle("hidden", state.checked);
+  $("#emptyState").classList.toggle("hidden", state.checked || state.isChecking);
   $("#resultContent").classList.toggle("hidden", !state.checked);
+  $("#resultContent").classList.toggle("is-entering", state.checked);
 
   document.querySelectorAll(".filter-chip").forEach((button) => {
     button.classList.toggle("active", button.dataset.filter === state.filter);
