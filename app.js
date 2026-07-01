@@ -240,19 +240,6 @@ async function parsePdfStockouts(file) {
   return stockouts;
 }
 
-function parseManualStockouts(text) {
-  return text
-    .split(/\r?\n/)
-    .map((line) => clean(line))
-    .filter(Boolean)
-    .map((line) => {
-      const parts = line.split("|").map(clean);
-      if (parts.length >= 3) return { maker: parts[0], productName: parts[1], expectedDate: parts[2] || "-" };
-      return { maker: "", productName: parts[0], expectedDate: parts[1] || "-" };
-    })
-    .filter((item) => item.productName);
-}
-
 function uniqueCount(values) {
   return new Set(values.filter(Boolean)).size;
 }
@@ -272,7 +259,7 @@ function runMatch() {
     return;
   }
   if (!state.stockouts.length) {
-    alert("품절목록을 불러오거나 직접 입력해 주세요.");
+    alert("품절목록을 불러오거나 파일을 선택해 주세요.");
     return;
   }
 
@@ -616,9 +603,9 @@ function render() {
 
 function downloadTemplate() {
   const csv = [
-    "사업자명,연락처,담당자명,병의원명,제품명",
-    "참사랑약품,010-0000-0000,김대표,맑은샘내과의원,아로틴정 10mg",
-    "참사랑약품,010-0000-0000,김대표,맑은샘내과의원,아로틴정 20mg",
+    "사업자명,병의원명,제품명",
+    "참사랑약품,맑은샘내과의원,아로틴정 10mg",
+    "참사랑약품,맑은샘내과의원,아로틴정 20mg",
   ].join("\n");
   downloadBlob(new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" }), "거래처마스터_양식.csv");
 }
@@ -659,15 +646,6 @@ $("#loadDefaultButton").addEventListener("click", () => {
   state.stockouts = [...DEFAULT_STOCKOUT_ITEMS];
   state.checked = false;
   render();
-});
-
-$("#manualNotice").addEventListener("input", (event) => {
-  const items = parseManualStockouts(event.target.value);
-  if (items.length) {
-    state.stockouts = items;
-    state.checked = false;
-    render();
-  }
 });
 
 $("#checkButton").addEventListener("click", runMatch);
