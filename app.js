@@ -282,6 +282,39 @@ function animateMetricCounters(values) {
   });
 }
 
+function popPillParticles(button) {
+  if (!button || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const rect = button.getBoundingClientRect();
+  const burst = document.createElement("span");
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+
+  burst.className = "pill-particle-burst";
+  burst.setAttribute("aria-hidden", "true");
+  burst.style.left = `${centerX}px`;
+  burst.style.top = `${centerY}px`;
+
+  Array.from({ length: 14 }).forEach((_, index) => {
+    const particle = document.createElement("span");
+    const angle = -160 + index * 24 + (index % 2 ? 10 : -8);
+    const distance = 46 + (index % 4) * 12;
+    const radians = (angle * Math.PI) / 180;
+
+    particle.className = "pill-particle";
+    particle.textContent = "💊";
+    particle.style.setProperty("--x", `${Math.cos(radians) * distance}px`);
+    particle.style.setProperty("--y", `${Math.sin(radians) * distance}px`);
+    particle.style.setProperty("--r", `${angle + 90}deg`);
+    particle.style.setProperty("--s", `${0.78 + (index % 3) * 0.12}`);
+    particle.style.setProperty("--d", `${index * 14}ms`);
+    burst.append(particle);
+  });
+
+  document.body.append(burst);
+  window.setTimeout(() => burst.remove(), 1400);
+}
+
 async function runMatch() {
   if (state.isChecking) return;
   if (!state.clients.length) {
@@ -293,6 +326,7 @@ async function runMatch() {
     return;
   }
 
+  popPillParticles($("#checkButton"));
   state.isChecking = true;
   state.checked = false;
   render();
