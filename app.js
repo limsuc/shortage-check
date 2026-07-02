@@ -185,13 +185,9 @@ async function readFileText(file) {
 }
 
 async function parseClientFile(file) {
-  const lower = file.name.toLowerCase();
-  if (!lower.endsWith(".csv")) {
-    throw new Error("현재 미리보기에서는 CSV 마스터 파일을 먼저 지원합니다. 예시 양식을 CSV로 저장해서 업로드해 주세요.");
-  }
   const rows = parseCsv(await readFileText(file));
   const clients = parseClientRows(rows);
-  if (!clients.length) throw new Error("거래처 마스터에서 유효한 데이터를 찾지 못했습니다.");
+  if (!clients.length) throw new Error("거래처 마스터에서 유효한 데이터를 찾지 못했습니다. 예시 양식을 CSV로 저장해서 업로드해 주세요.");
   return clients;
 }
 
