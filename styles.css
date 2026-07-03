@@ -206,7 +206,7 @@ h3 {
   font-size: 17px;
 }
 
-.intro-panel p:last-child,
+.intro-panel > div > p:last-of-type,
 .setup-step p,
 .client-head p,
 .empty-state,
@@ -215,10 +215,22 @@ td {
   line-height: 1.6;
 }
 
-.intro-panel p:last-child {
+.intro-panel > div > p:last-of-type {
   max-width: 780px;
   margin-top: 12px;
   font-size: 15px;
+}
+
+.intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.intro-actions .primary-button {
+  min-height: 42px;
+  text-decoration: none;
 }
 
 .intro-summary {
