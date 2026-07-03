@@ -533,8 +533,35 @@ function downloadBlob(blob, filename) {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = filename;
+  document.body.append(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function shareImageBlob(blob, filename, title) {
+  if (!navigator.share || !navigator.canShare || typeof File === "undefined") return false;
+
+  const file = new File([blob], filename, { type: "image/png" });
+  if (!navigator.canShare({ files: [file] })) return false;
+
+  try {
+    await navigator.share({
+      files: [file],
+      title,
+      text: "품절 영향 내역 이미지입니다.",
+    });
+    return true;
+  } catch (error) {
+    if (error.name === "AbortError") return "cancelled";
+    return false;
+  }
+}
+
+function prefersMobileImageShare() {
+  const touchDevice = window.matchMedia("(pointer: coarse)").matches;
+  const mobileAgent = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  return touchDevice || mobileAgent;
 }
 
 async function copyCardImage(card) {
@@ -542,17 +569,28 @@ async function copyCardImage(card) {
   const clientName = card.querySelector("h3").textContent.trim();
   if (!blob) throw new Error("이미지 생성에 실패했습니다.");
 
+  const filename = `${clientName}_품절내용.png`;
+  if (prefersMobileImageShare()) {
+    const shared = await shareImageBlob(blob, filename, `${clientName} 품절 영향 내역`);
+    if (shared === true) return "shared";
+    if (shared === "cancelled") return "cancelled";
+  }
+
   if (navigator.clipboard && window.ClipboardItem) {
     try {
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       return "copied";
     } catch {
-      downloadBlob(blob, `${clientName}_품절내용.png`);
+      downloadBlob(blob, filename);
       return "downloaded";
     }
   }
 
-  downloadBlob(blob, `${clientName}_품절내용.png`);
+  const shared = await shareImageBlob(blob, filename, `${clientName} 품절 영향 내역`);
+  if (shared === true) return "shared";
+  if (shared === "cancelled") return "cancelled";
+
+  downloadBlob(blob, filename);
   return "downloaded";
 }
 
@@ -633,7 +671,7 @@ function renderResultCard(result, resultIndex) {
       </div>
       <div class="delivery-actions">
         <button class="ghost-button text-copy-button" type="button">TEXT 메세지 복사</button>
-        <button class="primary-button image-copy-button" type="button">품절내용 이미지 복사</button>
+        <button class="primary-button image-copy-button" type="button">품절내용 이미지 복사/저장</button>
       </div>
     </article>`;
 }
@@ -771,7 +809,13 @@ $("#resultContent").addEventListener("click", async (event) => {
     imageButton.disabled = true;
     try {
       const action = await copyCardImage(card);
-      flashButton(imageButton, action === "copied" ? "이미지 복사완료" : "PNG 저장완료", "품절내용 이미지 복사");
+      const labels = {
+        copied: "이미지 복사완료",
+        shared: "공유창 열림",
+        cancelled: "공유 취소",
+        downloaded: "PNG 저장완료",
+      };
+      flashButton(imageButton, labels[action] || "완료", "품절내용 이미지 복사/저장");
     } catch (error) {
       alert(`이미지 복사 실패: ${error.message}`);
       imageButton.disabled = false;
